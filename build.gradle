@@ -1,0 +1,77 @@
+plugins {
+    id "java"
+    id "org.graalvm.buildtools.native" version "0.10.2"
+}
+
+group = "ex.neskoro"
+version = projectVersion
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    testImplementation platform("org.junit:junit-bom:5.10.0")
+    testImplementation "org.junit.jupiter:junit-jupiter"
+
+    implementation "info.picocli:picocli:4.7.1"
+    annotationProcessor "info.picocli:picocli-codegen:4.7.1"
+}
+
+test {
+    useJUnitPlatform()
+}
+
+jar {
+    manifest {
+        attributes(
+                "Main-Class": "ex.neskoro.jpass.cli.JPass"
+        )
+    }
+    from {
+        configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) }
+    }
+}
+
+graalvmNative {
+    toolchainDetection = true
+
+    binaries {
+        main {
+            imageName = targetFileName
+            mainClass = "ex.neskoro.jpass.cli.JPass"
+            verbose = true
+        }
+    }
+}
+
+
+tasks.named("nativeCompile") {
+    // you can turn on copying executable file to some directory
+    // right after nativeCompile gradle task executed
+    // use ./gradlew nativeCompile -PtoLocalBin=true -PexecutablePath="path/to/executable" (default "~/dev/bin")
+    if (project.findProperty("toLocalBin")) {
+        finalizedBy("copyToLocalBin")
+    }
+}
+
+tasks.register("copyToLocalBin", Copy) {
+    println("Copying executable to local ~/dev/bin")
+    from "build/native/nativeCompile"
+    def executablePath = System.properties["user.home"] + "/dev/bin"
+    if (project.hasProperty("executablePath")) {
+        executablePath = project.findProperty("executablePath")
+    }
+    into executablePath
+    include "jpass"
+    doNotTrackState("Installation directory contains unrelated files")
+
+    filePermissions {
+        user {
+            read = true
+            execute = true
+        }
+        other.execute = false
+    }
+}
+
