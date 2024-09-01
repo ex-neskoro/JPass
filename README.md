@@ -9,7 +9,7 @@
 
 ## Description
 
-**Jpass** - cli tool for generating temporary passwords
+**JPass** - cli tool for generating temporary passwords
 
 ## Build and run
 
