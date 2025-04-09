@@ -13,8 +13,6 @@ import java.util.Random;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.Predicate;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import static picocli.CommandLine.Command;
 import static picocli.CommandLine.Help;
@@ -109,20 +107,19 @@ public class JPass implements Callable<Integer> {
             throw new RuntimeException("You should use at least one predicate flag. See --help for more information.");
         }
 
-        Stream<Character> stream = prepareRandom(isSecure).ints(LOWER_BOUND, UPPER_BOUND)
-            .boxed()
-            .map(i -> (char) i.intValue());
+        StringBuilder sb = new StringBuilder(length);
+        Predicate<Character> excludedPredicate = isExcludedPresent
+            ? new ExcludedPredicate(excludedCharacters)
+            : character -> true;
 
-        if (isExcludedPresent) {
-            stream = stream.filter(new ExcludedPredicate(excludedCharacters));
-        }
-
-        String pass = stream.filter(getCombinedPredicate(predicates))
+        prepareRandom(isSecure).ints(LOWER_BOUND, UPPER_BOUND)
+            .mapToObj(i -> (char) i)
+            .filter(excludedPredicate)
+            .filter(predicates.stream().reduce(character -> false, Predicate::or))
             .limit(length)
-            .map(Object::toString)
-            .collect(Collectors.joining());
+            .forEach(sb::append);
 
-        System.out.println(pass);
+        System.out.println(sb);
 
         return 0;
     }
@@ -155,13 +152,4 @@ public class JPass implements Callable<Integer> {
     private Random prepareRandom(boolean isSecure) {
         return isSecure ? SECURE_RANDOM : RANDOM;
     }
-
-    private Predicate<Character> getCombinedPredicate(ArrayList<Predicate<Character>> predicates) {
-        Predicate<Character> combinedPredicate = character -> false;
-        for (Predicate<Character> predicate : predicates) {
-            combinedPredicate = combinedPredicate.or(predicate);
-        }
-        return combinedPredicate;
-    }
-
 }

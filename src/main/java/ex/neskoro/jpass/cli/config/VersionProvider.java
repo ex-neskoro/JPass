@@ -5,6 +5,6 @@ import static picocli.CommandLine.IVersionProvider;
 public class VersionProvider implements IVersionProvider {
     @Override
     public String[] getVersion() {
-        return new String[]{"jpass 1.2", "ex.neskoro©", "2024"};
+        return new String[]{"jpass 1.3", "ex.neskoro©", "2024"};
     }
 }
