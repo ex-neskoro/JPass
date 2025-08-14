@@ -9,8 +9,7 @@ public class ExcludedPredicate implements Predicate<Character> {
 
     public ExcludedPredicate(String excludedCharacters) {
         excludedCharactersList = excludedCharacters.chars()
-            .boxed()
-            .map(i -> (char) i.intValue())
+            .mapToObj(i -> (char) i)
             .collect(Collectors.toSet());
     }
 

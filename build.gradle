@@ -1,21 +1,22 @@
 plugins {
     id "java"
-    id "org.graalvm.buildtools.native" version "0.10.2"
+    id "org.graalvm.buildtools.native" version "0.11.0"
 }
 
 group = "ex.neskoro"
 version = projectVersion
+var picocliVersion = "4.7.7"
 
 repositories {
     mavenCentral()
 }
 
 dependencies {
+    implementation "info.picocli:picocli:$picocliVersion"
+    annotationProcessor "info.picocli:picocli-codegen:$picocliVersion"
+
     testImplementation platform("org.junit:junit-bom:5.10.0")
     testImplementation "org.junit.jupiter:junit-jupiter"
-
-    implementation "info.picocli:picocli:4.7.1"
-    annotationProcessor "info.picocli:picocli-codegen:4.7.1"
 }
 
 test {
@@ -25,7 +26,7 @@ test {
 jar {
     manifest {
         attributes(
-                "Main-Class": "ex.neskoro.jpass.cli.JPass"
+            "Main-Class": "ex.neskoro.jpass.cli.JPass"
         )
     }
     from {

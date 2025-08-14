@@ -19,12 +19,14 @@ import static picocli.CommandLine.Help;
 import static picocli.CommandLine.Option;
 import static picocli.CommandLine.ScopeType;
 
-@Command(name = "jpass",
+@Command(
+    name = "jpass",
     scope = ScopeType.INHERIT,
     mixinStandardHelpOptions = true,
     versionProvider = VersionProvider.class,
     description = "JPass project - cli tool for generating temporary passwords",
-    sortOptions = false)
+    sortOptions = false
+)
 public class JPass implements Callable<Integer> {
 
     // https://www.asciitable.com/
@@ -32,17 +34,7 @@ public class JPass implements Callable<Integer> {
     private static final int LOWER_BOUND = 33;
     // z char
     private static final int UPPER_BOUND = 122;
-    private static final Random RANDOM = ThreadLocalRandom.current();
-    private static final Random SECURE_RANDOM;
     private static final String SECURE_ALGO = "NativePRNGNonBlocking";
-
-    static {
-        try {
-            SECURE_RANDOM = SecureRandom.getInstance(SECURE_ALGO);
-        } catch (NoSuchAlgorithmException e) {
-            throw new RuntimeException(e);
-        }
-    }
 
     @Option(names = {"-l", "--length"},
         required = true,
@@ -107,7 +99,8 @@ public class JPass implements Callable<Integer> {
             throw new RuntimeException("You should use at least one predicate flag. See --help for more information.");
         }
 
-        StringBuilder sb = new StringBuilder(length);
+        var sb = new StringBuilder(length);
+        var combinedPredicate = predicates.stream().reduce(character -> false, Predicate::or);
         Predicate<Character> excludedPredicate = isExcludedPresent
             ? new ExcludedPredicate(excludedCharacters)
             : character -> true;
@@ -115,7 +108,7 @@ public class JPass implements Callable<Integer> {
         prepareRandom(isSecure).ints(LOWER_BOUND, UPPER_BOUND)
             .mapToObj(i -> (char) i)
             .filter(excludedPredicate)
-            .filter(predicates.stream().reduce(character -> false, Predicate::or))
+            .filter(combinedPredicate)
             .limit(length)
             .forEach(sb::append);
 
@@ -150,6 +143,16 @@ public class JPass implements Callable<Integer> {
     }
 
     private Random prepareRandom(boolean isSecure) {
-        return isSecure ? SECURE_RANDOM : RANDOM;
+        return isSecure
+            ? getSecureRandom()
+            : ThreadLocalRandom.current();
+    }
+
+    private Random getSecureRandom() {
+        try {
+            return SecureRandom.getInstance(SECURE_ALGO);
+        } catch (NoSuchAlgorithmException e) {
+            throw new RuntimeException("SecureRandom algorithm not found: " + SECURE_ALGO);
+        }
     }
 }
